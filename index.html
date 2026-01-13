@@ -1,98 +1,174 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <title>Portfolio - Basma Grioute</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      line-height: 1.6;
-      margin: 20px;
-      max-width: 800px;
-      color: #2c3e50;
-    }
-    h1 {
-      color: #1abc9c;
-    }
-    h2 {
-      color: #34495e;
-      margin-top: 30px;
-    }
-    ul {
-      list-style-type: square;
-      padding-left: 20px;
-    }
-    a {
-      color: #2980b9;
-      text-decoration: none;
-    }
-    a:hover {
-      text-decoration: underline;
-    }
-    p, li {
-      font-size: 16px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Basma Grioute | Interactive Portfolio</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/all.min.css">
+    
+    <style>
+        :root {
+            --primary: #1abc9c; --bg: #ffffff; --text: #2c3e50; --card: #f8f9fa;
+        }
+        [data-theme="dark"] {
+            --primary: #00ffcc; --bg: #0f172a; --text: #f1f5f9; --card: #1e293b;
+        }
+        body {
+            margin: 0; font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text);
+            transition: all 0.4s ease; overflow-x: hidden;
+        }
+        canvas { position: fixed; top: 0; left: 0; z-index: -1; opacity: 0.6; }
+
+        /* Navigation & Controls */
+        .controls {
+            position: fixed; top: 20px; right: 20px; z-index: 100;
+            display: flex; gap: 10px; background: rgba(0,0,0,0.1); padding: 10px; border-radius: 50px;
+        }
+        button {
+            border: none; background: var(--primary); color: white; padding: 8px 15px;
+            border-radius: 20px; cursor: pointer; font-weight: bold; transition: 0.3s;
+        }
+        button:hover { transform: scale(1.1); filter: brightness(1.2); }
+
+        /* Layout */
+        .container { max-width: 900px; margin: auto; padding: 80px 20px; position: relative; }
+        .hero { height: 80vh; display: flex; flex-direction: column; justify-content: center; text-align: center; }
+        h1 { font-size: 4rem; margin: 0; text-transform: uppercase; letter-spacing: 5px; }
+        
+        .section { margin-bottom: 60px; padding: 30px; background: var(--card); border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
+        .tag { display: inline-block; background: var(--primary); color: #000; padding: 5px 15px; border-radius: 15px; margin: 5px; font-size: 0.9rem; }
+        
+        [dir="rtl"] { text-align: right; }
+    </style>
 </head>
 <body>
+    <canvas id="bg-canvas"></canvas>
 
-  <h1>Basma Grioute</h1>
-  <p>Étudiante en Marketing Digital et Commercial</p>
+    <div class="controls">
+        <button onclick="updateLang('fr')">FR</button>
+        <button onclick="updateLang('en')">EN</button>
+        <button onclick="updateLang('ar')">AR</button>
+        <button onclick="toggleTheme()"><i class="fas fa-moon"></i></button>
+    </div>
 
-  <h2>À propos</h2>
-  <p>
-    Étudiante en marketing digital et commercial, motivée par l’analyse des performances marketing, les stratégies digitales et la prise de décision basée sur les données.
-  </p>
+    <div class="container" id="content">
+        <section class="hero">
+            <h1 id="name">Basma Grioute</h1>
+            <p id="title" style="font-size: 1.5rem; opacity: 0.8;"></p>
+            <div id="contact" style="margin-top: 20px;"></div>
+        </section>
 
-  <h2>Formation</h2>
-  <ul>
-    <li>Baccalauréat en Économie – Lycée Loui le Grand Hassan (2023/2024)</li>
-  </ul>
+        <section class="section">
+            <h2 id="head-profile"></h2>
+            <p id="desc-profile"></p>
+            <div id="expertise-tags"></div>
+        </section>
 
-  <h2>Expérience / Stage</h2>
-  <ul>
-    <li>
-      Stagiaire en Management et Marketing – Label’Vie (Juin 2025 – Juillet 2025)
-      <ul>
-        <li>Participation aux activités de gestion et de marketing</li>
-        <li>Analyse des actions marketing et suivi des performances</li>
-        <li>Contribution à la coordination des opérations commerciales</li>
-      </ul>
-    </li>
-  </ul>
+        <section class="section">
+            <h2 id="head-exp"></h2>
+            <div id="exp-list"></div>
+        </section>
 
-  <h2>Compétences</h2>
-  <ul>
-    <li>Marketing Digital et Commercial</li>
-    <li>Analyse de données : Excel, Power BI, Python</li>
-    <li>Gestion de projet</li>
-    <li>Git / GitHub</li>
-  </ul>
+        <section class="section">
+            <h2 id="head-skills"></h2>
+            <div id="skills-list"></div>
+        </section>
+    </div>
 
-  <h2>Langues</h2>
-  <ul>
-    <li>Français : Courant</li>
-    <li>Anglais : Intermédiaire</li>
-    <li>Arabe : Langue maternelle</li>
-  </ul>
+    <script>
+        // --- DATA JSON ARRAY ---
+        const cvData = {
+            fr: {
+                title: "Étudiante en Marketing Digital & BI",
+                profile: "Passionnée par l'intersection du Marketing Digital et de la Data Science[cite: 5]. Spécialisée dans l'analyse de données et l'optimisation stratégique[cite: 6, 7].",
+                expertise: ["Marketing Digital", "Business Intelligence", "Python", "Power BI", "Analyse du Churn"],
+                expHead: "Expérience Professionnelle",
+                exp: "Stagiaire Management & Marketing chez Label'Vie (Juin 2025) : Analyse des KPI et coordination commerciale[cite: 11, 12, 13, 14].",
+                skillsHead: "Compétences & Formation",
+                skills: "DUT Marketing Digital (EST Salé)[cite: 22, 23]. Logiciels : Excel, Power BI, Python[cite: 27]."
+            },
+            en: {
+                title: "Digital Marketing & BI Student",
+                profile: "Passionate about the intersection of Digital Marketing and Data Science[cite: 5]. Specialized in data analysis and strategic optimization[cite: 6, 7].",
+                expertise: ["Digital Marketing", "BI", "Python", "Power BI", "Churn Analysis"],
+                expHead: "Work Experience",
+                exp: "Management & Marketing Intern at Label'Vie (June 2025): KPI analysis and commercial coordination[cite: 11, 12, 13, 14].",
+                skillsHead: "Skills & Education",
+                skills: "DUT Digital Marketing (EST Salé)[cite: 22, 23]. Tools: Excel, Power BI, Python[cite: 27]."
+            },
+            ar: {
+                title: "طالبة في التسويق الرقمي وذكاء الأعمال",
+                profile: "شغوفة بالتقاطع بين التسويق الرقمي وعلم البيانات[cite: 5]. متخصصة في تحليل الأداء واتخاذ القرار[cite: 6].",
+                expertise: ["التسويق الرقمي", "ذكاء الأعمال", "بايثون", "Power BI"],
+                expHead: "الخبرة المهنية",
+                exp: "متدربة في الإدارة والتسويق في Label'Vie (يونيو 2025): تحليل مؤشرات الأداء[cite: 11, 12, 13].",
+                skillsHead: "المهارات والتعليم",
+                skills: "دبلوم في التسويق الرقمي (EST Salé)[cite: 22]. الأدوات: Excel, Power BI, Python[cite: 27]."
+            }
+        };
 
-  <h2>Projets</h2>
-  <ul>
-    <li>
-      Mini-projet Data Science – Churn Prediction (en cours)<br>
-      GitHub : <a href="https://github.com/grioutebasma/cv-portfolio" target="_blank">cv-portfolio</a>
-    </li>
-    <li>
-      Profil Kaggle : <a href="https://www.kaggle.com/basmagrioute" target="_blank">Mon profil Kaggle</a>
-    </li>
-  </ul>
+        // --- CORE LOGIC ---
+        function updateLang(lang) {
+            const data = cvData[lang];
+            document.documentElement.lang = lang;
+            document.body.dir = (lang === 'ar') ? 'rtl' : 'ltr';
+            
+            document.getElementById('title').innerText = data.title;
+            document.getElementById('head-profile').innerText = (lang === 'ar') ? "الملف الشخصي" : "Profil";
+            document.getElementById('desc-profile').innerText = data.profile;
+            document.getElementById('head-exp').innerText = data.expHead;
+            document.getElementById('exp-list').innerText = data.exp;
+            document.getElementById('head-skills').innerText = data.skillsHead;
+            document.getElementById('skills-list').innerText = data.skills;
 
-  <h2>CV Académique</h2>
-  <p>
-    <a href="BasmaGrioute_CV.pdf" target="_blank">Télécharger mon CV LaTeX</a>
-  </p>
+            let tags = "";
+            data.expertise.forEach(t => tags += `<span class="tag">${t}</span>`);
+            document.getElementById('expertise-tags').innerHTML = tags;
+        }
 
+        function toggleTheme() {
+            const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', theme);
+        }
+
+        // --- THREE.JS BACKGROUND ---
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('bg-canvas'), alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+
+        const particlesGeometry = new THREE.BufferGeometry();
+        const particlesCount = 1500;
+        const posArray = new Float32Array(particlesCount * 3);
+
+        for(let i=0; i < particlesCount * 3; i++) {
+            posArray[i] = (Math.random() - 0.5) * 60;
+        }
+        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+        const material = new THREE.PointsMaterial({ size: 0.05, color: 0x1abc9c });
+        const particlesMesh = new THREE.Points(particlesGeometry, material);
+        scene.add(particlesMesh);
+
+        camera.position.z = 20;
+
+        function animate() {
+            requestAnimationFrame(animate);
+            particlesMesh.rotation.y += 0.001;
+            particlesMesh.rotation.x += 0.001;
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Init
+        updateLang('fr');
+    </script>
 </body>
 </html>
-
-
